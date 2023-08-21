@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:monobank/screens/games/create_game_form.dart';
 import 'package:monobank/screens/home.dart';
+import 'package:monobank/screens/players/create_player_form.dart';
 import 'package:monobank/services/InheritedServices.dart';
 import 'package:monobank/services/db_service.dart';
 
@@ -42,6 +44,12 @@ class MyApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
+        routes: {
+          // '/games': (context) => const Home(initialIndex: 0),
+          '/games/create': (context) => CreateGameForm(),
+          // '/players': (context) => const Home(initialIndex: 1),
+          '/players/create': (context) => CreatePlayerForm(),
+        },
         home: const Home(),
       ),
     );

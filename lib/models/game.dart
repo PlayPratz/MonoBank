@@ -9,6 +9,8 @@ class Game {
 
   final Map<Player, PlayerState> playerStates = {};
 
+  final List<Transaction> transactions = [];
+
   Game(
       {required this.id,
       required this.moneyOnGo,
@@ -61,4 +63,9 @@ class PlayerState {
 class Transaction {
   final Player? sender;
   final Player? receiver;
+
+  final int amount;
+
+  Transaction(
+      {required this.sender, required this.receiver, required this.amount});
 }

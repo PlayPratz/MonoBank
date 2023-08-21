@@ -25,8 +25,8 @@ import 'package:sqflite/sqflite.dart';
 // }
 
 class DummyDbService implements DbService {
-  final players = <Player>[];
-  final games = <Game>[];
+  static final players = <Player>[];
+  static final games = <Game>[];
 
   @override
   void addPlayer(Player player) {
