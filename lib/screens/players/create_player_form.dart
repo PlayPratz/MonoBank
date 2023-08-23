@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:monobank/models/player.dart';
-import 'package:monobank/services/InheritedServices.dart';
+import 'package:monobank/services/db_service.dart';
 import 'package:monobank/util/util.dart';
 
 class CreatePlayerForm extends StatelessWidget {
@@ -41,13 +42,11 @@ class CreatePlayerForm extends StatelessWidget {
                       if (_formKey.currentState!.validate()) {
                         final player =
                             Player(id: getUniqueId(), name: playerName.trim());
-                        InheritedServices.of(context)
-                            .dbService
-                            .addPlayer(player);
+                        GetIt.instance.get<DbService>().addPlayer(player);
                         Navigator.pop(context);
                       }
                     },
-                    child: const Text("Create")),
+                    child: const Text("Save")),
               ),
             ],
           ),

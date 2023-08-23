@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:monobank/screens/games/game_list.dart';
 import 'package:monobank/screens/players/player_list.dart';
+import 'package:monobank/screens/settings/settings.dart';
 
 class Home extends StatelessWidget {
   final int initialIndex;
@@ -45,4 +46,4 @@ class Home extends StatelessWidget {
   }
 }
 
-const _screens = <Widget>[GameList(), PlayerList(), GameList()];
+const _screens = <Widget>[GameList(), PlayerList(), SettingsScreen()];

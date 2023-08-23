@@ -9,3 +9,5 @@ const playerColors = {
   "pink": Colors.pink,
   "violet": Colors.deepPurple,
 };
+
+const bankColor = Colors.blueGrey;
