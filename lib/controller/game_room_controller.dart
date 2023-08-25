@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:get_it/get_it.dart';
 import 'package:monobank/models/game.dart';
+import 'package:monobank/models/transaction.dart';
 import 'package:monobank/services/db_service.dart';
 
 class GameRoomController {
@@ -17,6 +18,7 @@ class GameRoomController {
 
   void addTransaction(Transaction transaction) {
     game.addTransaction(transaction);
+
     //TODO Update DB
     _gameRoomStateStreamController.add(TransactionsUpdatedGameRoomState());
   }

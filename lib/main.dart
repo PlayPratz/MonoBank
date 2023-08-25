@@ -11,7 +11,7 @@ void main() async {
 }
 
 Future<void> _initServices() async {
-  final dbService = DummyDbService();
+  final dbService = SqlDbService();
   await dbService.init();
   GetIt.instance.registerSingleton<DbService>(dbService);
 }

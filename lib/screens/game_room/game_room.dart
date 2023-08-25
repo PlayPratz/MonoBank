@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:monobank/controller/game_room_controller.dart';
 import 'package:monobank/elements/monocolors.dart';
 import 'package:monobank/models/game.dart';
 import 'package:monobank/models/player.dart';
+import 'package:monobank/models/transaction.dart';
 
 late GameRoomController _gameRoomController;
 
@@ -15,52 +17,56 @@ class GameRoom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final playerStatesEntries = game.playerStates.entries.toList();
     return Scaffold(
         appBar: AppBar(title: Text("${game.playerCount} Players")),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: _TransactionLog(game: game),
-                ),
-              ),
-              const Spacer(),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                  ),
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    if (index < game.playerCount) {
-                      final playerStateEntry = playerStatesEntries[index];
-                      return _PlayerChip(
-                          game: game,
-                          player: playerStateEntry.key,
-                          color: Color(
-                            playerStateEntry.value.colorHex,
-                          ));
-                    } else {
-                      return _PlayerChip(
-                        game: game,
-                        player: bank,
-                        color: bankColor,
-                      );
-                    }
-                  },
-                  itemCount: game.playerCount + 1,
-                ),
-              ),
-              const SizedBox(height: 16),
+              Expanded(flex: 2, child: _TransactionLog(game: game)),
+              const SizedBox(height: 8),
+              Expanded(child: _PlayerBlobPane(game: game)),
+              const SizedBox(height: 8),
             ],
           ),
         ));
+  }
+}
+
+class _PlayerBlobPane extends StatelessWidget {
+  final Game game;
+
+  const _PlayerBlobPane({super.key, required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    final playerStatesEntries = game.playerStates.entries.toList();
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+      ),
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (context, index) {
+        if (index < game.playerCount) {
+          final playerStateEntry = playerStatesEntries[index];
+          return _PlayerChip(
+              game: game,
+              player: playerStateEntry.key,
+              color: Color(
+                playerStateEntry.value.colorValue,
+              ));
+        } else {
+          return _PlayerChip(
+            game: game,
+            player: bank,
+            color: bankColor,
+          );
+        }
+      },
+      itemCount: game.playerCount + 1,
+    );
   }
 }
 
@@ -95,10 +101,12 @@ class _PlayerChip extends StatelessWidget {
             feedback: _PlayerBlob(
               player: player,
               color: color,
+              size: 64,
             ),
             child: _PlayerBlob(
               player: player,
               color: color,
+              size: 64,
             ));
       },
     );
@@ -131,14 +139,11 @@ class _PlayerBlob extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      style: FilledButton.styleFrom(
-        shape: const CircleBorder(),
-        fixedSize: Size(size, size),
-        backgroundColor: color,
-      ),
-      onPressed: () {},
-      child: size >= 128
+    return CircleAvatar(
+      backgroundColor: color,
+      foregroundColor: Colors.white,
+      radius: size,
+      child: size >= 64
           ? Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -172,80 +177,104 @@ class _TransactionLog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 1),
-          SizedBox(
-            height: 32,
-            width: double.infinity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                  color: Colors.grey.shade800,
-                  borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24))),
-              child: Center(
-                child: Text("TRANSACTION LOG",
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall!
-                        .copyWith(color: Colors.white)),
+    return Card(
+      color: Theme.of(context).colorScheme.secondary,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: StreamBuilder<GameRoomState>(
+                    stream: _gameRoomController.gameRoomStateStream,
+                    builder: (context, snapshot) {
+                      final reversedTransactions =
+                          game.transactions.reversed.toList(growable: false);
+                      return ListView.separated(
+                        itemCount: game.transactions.length,
+                        reverse: true,
+                        itemBuilder: (context, index) {
+                          final transaction = reversedTransactions[index];
+                          final senderState =
+                              game.playerStates[transaction.sender];
+                          final receiverState =
+                              game.playerStates[transaction.receiver];
+                          final formattedTime =
+                              DateFormat.Hm().format(transaction.createdAt);
+                          return ListTile(
+                            leading: Text(
+                              formattedTime,
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            title: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                _PlayerBlob(
+                                  player: transaction.sender,
+                                  color: transaction.sender == bank
+                                      ? bankColor
+                                      : Color(senderState!.colorValue),
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.remove_circle,
+                                  color: Colors.red,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 64,
+                                  child: Center(
+                                    child: Text(
+                                      transaction.amount.toString(),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.add_circle,
+                                  color: Colors.green,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                _PlayerBlob(
+                                    player: transaction.receiver,
+                                    color: transaction.receiver == bank
+                                        ? bankColor
+                                        : Color(receiverState!.colorValue),
+                                    size: 14),
+                              ],
+                            ),
+                          );
+                        },
+                        separatorBuilder: (context, index) {
+                          return const Divider(height: 0, color: Colors.grey);
+                        },
+                      );
+                    }),
               ),
             ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: StreamBuilder<GameRoomState>(
-                  stream: _gameRoomController.gameRoomStateStream,
-                  builder: (context, snapshot) {
-                    return ListView.separated(
-                      itemCount: game.transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = game.transactions[index];
-                        final senderState =
-                            game.playerStates[transaction.sender];
-                        final receiverState =
-                            game.playerStates[transaction.receiver];
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _PlayerBlob(
-                              player: transaction.sender,
-                              color: transaction.sender == bank
-                                  ? bankColor
-                                  : Color(senderState!.colorHex),
-                              size: 32,
-                            ),
-                            const Icon(Icons.remove_circle, color: Colors.red),
-                            Text(
-                              transaction.amount.toString(),
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const Icon(Icons.add_circle, color: Colors.green),
-                            _PlayerBlob(
-                              player: transaction.receiver,
-                              color: transaction.receiver == bank
-                                  ? bankColor
-                                  : Color(receiverState!.colorHex),
-                              size: 32,
-                            ),
-                          ],
-                        );
-                      },
-                      separatorBuilder: (context, index) {
-                        return const Divider();
-                      },
-                    );
-                  }),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                ),
+                onPressed: () {},
+                label: Text("TRANSACTION LOG",
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          color: Colors.white,
+                        )),
+                icon: const Icon(Icons.history),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -289,14 +318,14 @@ class _AddTransaction extends StatelessWidget {
                       player: sender,
                       color: sender == bank
                           ? bankColor
-                          : Color(game.playerStates[sender]!.colorHex)),
+                          : Color(game.playerStates[sender]!.colorValue)),
                   const Icon(Icons.send),
                   _PlayerBlob(
                       size: 64,
                       player: receiver,
                       color: receiver == bank
                           ? bankColor
-                          : Color(game.playerStates[receiver]!.colorHex)),
+                          : Color(game.playerStates[receiver]!.colorValue)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -336,15 +365,7 @@ class _AddTransaction extends StatelessWidget {
               SizedBox(
                 height: 48,
                 child: FilledButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final amount = int.parse(_amountTextController.text);
-                      final transaction = Transaction(
-                          sender: sender, receiver: receiver, amount: amount);
-                      _gameRoomController.addTransaction(transaction);
-                      Navigator.pop(context);
-                    }
-                  },
+                  onPressed: () => _handleTransactionSubmit(context),
                   child: const Text("Add Transaction"),
                 ),
               )
@@ -353,5 +374,15 @@ class _AddTransaction extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  _handleTransactionSubmit(BuildContext context) {
+    if (_formKey.currentState!.validate()) {
+      final amount = int.parse(_amountTextController.text);
+      final transaction =
+          Transaction(sender: sender, receiver: receiver, amount: amount);
+      _gameRoomController.addTransaction(transaction);
+      Navigator.pop(context);
+    }
   }
 }
